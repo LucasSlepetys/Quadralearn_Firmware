@@ -1,0 +1,59 @@
+
+Desktop tests for you and anyone maintaining this project
+========================================================
+
+These are repeatable examples with known answers. They run on the computer,
+not in the robot's normal program. No ESP32, PWM or physical serial port is used.
+They let you check a change before trying it with hardware.
+
+In the VS Code terminal, with Locomotion Firmware open:
+
+    .\test\run_desktop_tests.ps1
+
+This builds and runs four C++ programs:
+
+1. desktop/test_whole_leg.cpp
+   Checks sampling and HOME/OTHER preview/accept using simulated ADC and serial.
+   FAIL suggests a wiring expectation, sampling, capture or protocol regression.
+
+2. desktop/test_installed_joint_configuration.cpp
+   Checks the nine stored HOME/OTHER angle pairs, servo identities, q_0 and sigma.
+   Passes the captured voltages through ServoCalibration and JointMapping, then
+   checks the inverse conversion. Also checks that RR stays unconfigured.
+   FAIL identifies a joint and whether data, direction, units or conversion differ.
+
+3. desktop/test_measured_leg_pose.cpp
+   Checks captured FR/FL/RL HOME feedback and an interior FR pose against known
+   model angles and FK coordinates. Also checks simple FK axis/sign examples and
+   that invalid feedback or unconfigured RR cannot create a new pose.
+   The capture/link tests also check that POSE never modifies calibration records.
+
+4. desktop/test_servo_command.cpp
+   Checks q -> physical servo angle -> pulse width for every configured servo.
+   Also checks asymmetric stop clearances, exact usable boundaries, invalid inputs
+   and whole-leg rejection without partial output. The 2/3-degree clearances used
+   here are test examples only, not physical robot settings.
+   FAIL names the joint and whether mapping, table interpolation or rejection differs.
+
+After building, run only the second program with:
+
+    .\.pio\desktop_tests\installed_joint_configuration_test.exe
+
+Run only the new ServoCommand test after building with:
+
+    .\.pio\desktop_tests\servo_command_test.exe
+
+Rerun the build script after editing code; the executable alone runs the last build.
+If you intentionally replace calibration data later, review the test's expected
+measurements too. Do not change an expectation just to hide a failure.
+
+test_python_interface.py is the separate Python UI/client test. Run after the C++
+script; it uses whole_leg_test.exe as fake firmware and never connects to a board.
+
+test_feedback_visualization.py tests the new live view, plotting the real C++ FK
+results from fake ADC values. It also checks stale/disconnected/invalid data and
+leg selection. Run it with the quadruped environment activated for its plot libraries.
+
+PASS means the software reproduces the supplied measurements and mathematical
+expectations. It does not prove physical home alignment, feedback accuracy,
+collision clearance or safe PWM limits. Those still need their physical checks.
